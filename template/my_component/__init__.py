@@ -5,7 +5,9 @@ import streamlit.components.v1 as components
 
 @st.cache
 def read_data():
-    df = pd.DataFrame({'foo': [1,2,3], 'bar': ['hey','what','up']})
+    df = pd.read_csv(
+        "airports.dat"
+    )
     return df
 
 _productive_table = components.declare_component(
