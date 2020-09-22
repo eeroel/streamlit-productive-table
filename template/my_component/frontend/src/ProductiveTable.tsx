@@ -8,13 +8,15 @@ import {
   withStreamlitConnection,
 } from "streamlit-component-lib"
 
+const missingValueString = "N/A"
+
 interface TableProps {
   element: ArrowTable
-  skipFirstCol: boolean
+  showIndex: boolean
 }
 
 interface TableRowProps {
-  skipFirstCol: boolean
+  showIndex: boolean
   rowIndex: number
   table: ArrowTable
 }
@@ -28,7 +30,7 @@ class Table extends React.PureComponent<TableProps> {
 
   public render = (): ReactNode => {
     const table = this.props.element
-    const skipFirstCol = this.props.skipFirstCol
+    const showIndex = this.props.showIndex
     const hasHeader = table.headerRows > 0
     const hasData = table.dataRows > 0
     const id = table.uuid ? "T_" + table.uuid : undefined
@@ -37,18 +39,18 @@ class Table extends React.PureComponent<TableProps> {
 
     return (
       <>
-        <div className="streamlit-table stTable">
+        <div className="streamlit-table stTable" style={{overflow: 'auto'}}>
           <style>{table.styles}</style>
           <UITable id={id} className={classNames} bordered>
             {caption}
             {hasHeader && (
               <thead>
-                <TableRows skipFirstCol={skipFirstCol} isHeader={true} table={table} />
+                <TableRows showIndex={showIndex} isHeader={true} table={table} />
               </thead>
             )}
             <tbody>
               {hasData ? (
-                <TableRows skipFirstCol={skipFirstCol} isHeader={false} table={table} />
+                <TableRows showIndex={showIndex} isHeader={false} table={table} />
               ) : (
                 <tr>
                   <td colSpan={table.columns || 1}>empty</td>
@@ -71,19 +73,19 @@ class Table extends React.PureComponent<TableProps> {
 
 interface TableRowsProps {
   isHeader: boolean
-  skipFirstCol: boolean
+  showIndex: boolean
   table: ArrowTable
 }
 
 const TableRows: React.FC<TableRowsProps> = (props) => {
-  const { isHeader, skipFirstCol, table } = props
+  const { isHeader, showIndex, table } = props
   const { headerRows, rows } = table
   const startRow = isHeader ? 0 : headerRows
   const endRow = isHeader ? headerRows : rows
 
   const tableRows = range(startRow, endRow).map((rowIndex) => (
     <tr key={rowIndex}>
-      <TableRow skipFirstCol={skipFirstCol} rowIndex={rowIndex} table={table} />
+      <TableRow showIndex={showIndex} rowIndex={rowIndex} table={table} />
     </tr>
   ))
 
@@ -99,33 +101,43 @@ const TableRows: React.FC<TableRowsProps> = (props) => {
 
 interface TableRowProps {
   rowIndex: number
-  skipFirstCol: boolean
+  showIndex: boolean
   table: ArrowTable
 }
 
 const TableRow: React.FC<TableRowProps> = (props) => {
-  const { rowIndex, skipFirstCol, table } = props
+  const { rowIndex, showIndex, table } = props
   const { columns } = table
 
-  const cells = range(skipFirstCol ? 1 : 0, columns).map((columnIndex) => {
+  const cells = range(0, columns).map((columnIndex) => {
     const { classNames, content, id, type } = table.getCell(
       rowIndex,
       columnIndex
     )
 
     // Format the content if needed
-    const formattedContent = content.toString()
+    const formattedContent = (content ? content.toString() : missingValueString)
 
     switch (type) {
+      // TODO: here we assume that a blank corresponds exactly to an index column.
+      // if this is not the case, we may mess tables up this way
       case "blank": {
-        return <th key={columnIndex} className={classNames} />
+        if (showIndex) {
+          return <th key={columnIndex} className={classNames} />
+        } else {
+          return
+        }
       }
       case "index": {
-        return (
-          <th key={columnIndex} scope="row" className={classNames}>
-            {formattedContent}
-          </th>
-        )
+        if (showIndex) {
+          return (
+            <th key={columnIndex} scope="row" className={classNames}>
+              {formattedContent}
+            </th>
+          )
+        } else {
+          return
+        }
       }
       case "columns": {
         return (
@@ -158,7 +170,7 @@ const ProductiveTable: React.FC<ComponentProps> = (props) => {
     Streamlit.setFrameHeight()
   })
 
-  return <Table skipFirstCol={props.args.skip_first_col} element={props.args.data} />
+  return <Table showIndex={props.args.show_index} element={props.args.data} />
 }
 
 export default withStreamlitConnection(ProductiveTable)
