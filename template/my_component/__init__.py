@@ -34,8 +34,8 @@ def _productive_table(data: pd.DataFrame, show_index):
         data
         .style
         .set_table_styles(
-            [{'selector': 'th:hover',
-            'props': [('background-color', '#aaf')]}]
+            [{'selector': 'th:hover', 'props': [('background-color', '#aaf')]},
+            {'selector': 'table', 'props': [('table-layout', 'fixed')]}]
         )
     )
     if not show_index:
@@ -63,9 +63,10 @@ def _productive_table(data: pd.DataFrame, show_index):
             // NOTE: this check would make more sense on the column level:
             // e.g. an ID string could have values 112 and ABC => 
             // lexicographic order would make more sense
-            values = rowArray.map( (e,i) => { 
+            values = rowArray.map( e => { 
                     const val = e.getElementsByTagName("TD")[n].innerHTML;
-                    return Number(val) ? Number(val):val.toLowerCase()
+                    const number = Number(val)
+                    return number ? number:val.toLowerCase()
                 })
 
             indexed = values.map( (e,i) => { return {ind: i, val: e} });
@@ -80,7 +81,7 @@ def _productive_table(data: pd.DataFrame, show_index):
             }
 
             // 2. reorder the table using the sorted indices
-            indices.map( (e,i) => { rowArray[e].parentNode.appendChild(rowArray[e]) });
+            indices.map( e => { rowArray[e].parentNode.appendChild(rowArray[e]) });
         }
 
         </script>
@@ -91,7 +92,7 @@ def _productive_table(data: pd.DataFrame, show_index):
 def productive_table(data, show_index=True, width=750, height=1000):
     return components.html(_productive_table(data=data, show_index=show_index), width=width, height=height, scrolling=True)
 
-df = read_data().head(50)
+df = read_data()#.head(50)
 rows = productive_table(df, show_index=False)
 #st.dataframe(df)
 
